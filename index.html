@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#03140e">
+<title>فوج مالك الأشتر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--g:#00f5a0;--gold:#e3cd86}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;font-family:'Cairo',sans-serif;color:#fff;background:#03140e;overflow-x:hidden}
+
+/* الخلفية */
+.background{position:fixed;inset:0;z-index:-5;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#075c3b 0%,transparent 70%),linear-gradient(145deg,#031a10,#010805)}
+.glow{position:absolute;width:350px;height:350px;border-radius:50%;filter:blur(110px);opacity:.2;animation:gm 12s ease-in-out infinite alternate}
+.glow.one{background:#00ff9d;top:5%;right:-180px}
+.glow.two{background:#00b879;bottom:0;left:-180px;animation-delay:3s}
+@keyframes gm{to{transform:translate(80px,100px)}}
+#map{position:fixed;inset:0;z-index:-4;opacity:.5;background:#061b13}
+.leaflet-container{background:#061b13;font-family:'Cairo',sans-serif}
+.leaflet-tile{filter:grayscale(.85) sepia(.2) hue-rotate(85deg) saturate(.75) brightness(.62) contrast(1.2)}
+.leaflet-control-attribution{font-size:8px!important;opacity:.6}
+.pp{width:12px;height:12px;background:#00ffa6;border:2px solid #eafff4;border-radius:50%;box-shadow:0 0 12px #00ffa6,0 0 25px #00ffa6;animation:pp 2s infinite}
+@keyframes pp{0%,100%{transform:scale(.65);opacity:.35}50%{transform:scale(1.3);opacity:1}}
+.shade{position:fixed;inset:0;z-index:-3;pointer-events:none;background:linear-gradient(180deg,rgba(1,15,9,.56),rgba(1,12,8,.28),rgba(1,15,9,.75)),radial-gradient(ellipse at center,transparent 10%,rgba(0,0,0,.22) 100%)}
+.grid{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.15;background-image:linear-gradient(#00ffa011 1px,transparent 1px),linear-gradient(90deg,#00ffa011 1px,transparent 1px);background-size:50px 50px;animation:gr 20s linear infinite}
+@keyframes gr{to{background-position:0 100px}}
+.radar{position:fixed;width:min(95vw,500px);aspect-ratio:1;top:42%;left:50%;transform:translate(-50%,-50%);border:1px solid #00ffa020;border-radius:50%;pointer-events:none;z-index:-1;background:repeating-radial-gradient(circle,transparent 0 65px,#00ffa018 66px 67px)}
+.radar:before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(transparent 0deg,transparent 290deg,#00ffa000 310deg,#00ffa04d 360deg);animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* شاشة التحميل */
+#loader{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:radial-gradient(circle at center,#0b3927,#020c07 75%);transition:opacity .9s,visibility .9s}
+#loader.hide{opacity:0;visibility:hidden}
+.lc{width:85%;max-width:350px;text-align:center}
+.llogo{width:95px;height:95px;margin:auto;display:grid;place-items:center;border:1px solid var(--g);border-radius:28px;background:rgba(255,255,255,.04);backdrop-filter:blur(25px);-webkit-backdrop-filter:blur(25px);color:var(--g);font-size:43px;font-weight:900;box-shadow:0 0 35px #00ffa033,inset 0 0 20px #00ffa015;animation:lg 2s infinite alternate}
+@keyframes lg{to{box-shadow:0 0 55px #00ffa077}}
+.lt{margin-top:20px;color:#eafff4;font-size:23px;font-weight:900}
+.ld{margin-top:5px;color:var(--gold);font-size:12px}
+.lline{height:5px;margin-top:30px;border-radius:30px;background:#ffffff16;overflow:hidden}
+#progress{height:100%;width:0;border-radius:30px;background:linear-gradient(90deg,#00b879,#00ffc0);box-shadow:0 0 20px var(--g)}
+.ln{margin-top:12px;color:var(--g);font-size:15px}
+
+/* رسالة الترحيب (5 ثوانٍ) */
+#welcome{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:20px;background:rgba(0,10,6,.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);opacity:0;visibility:hidden;transition:opacity .8s,visibility .8s}
+#welcome.show{opacity:1;visibility:visible}
+.wbox{width:min(100%,400px);padding:34px 22px 26px;text-align:center;border:1px solid rgba(255,255,255,.28);border-radius:30px;background:linear-gradient(160deg,rgba(255,255,255,.13),rgba(0,255,160,.04));backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);box-shadow:0 0 60px #00ffa01f,inset 0 1px rgba(255,255,255,.35);transform:translateY(26px) scale(.95);transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+#welcome.show .wbox{transform:none}
+.wicon{width:64px;height:64px;margin:0 auto 16px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--g);color:var(--g);font-size:30px;box-shadow:0 0 28px #00ffa044}
+.wbox h2{font-size:22px;font-weight:900;color:#d1ffe5}
+.wbox p{margin-top:10px;color:#b9dcc9;font-size:13px;line-height:2}
+.wdev{display:inline-block;margin-top:14px;padding:5px 16px;border:1px solid #d9c27a55;border-radius:30px;color:var(--gold);font-size:12px;font-weight:600}
+.wbar{height:3px;margin-top:22px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden}
+.wbar i{display:block;height:100%;background:linear-gradient(90deg,#00b879,#8affc8);transform-origin:right}
+#welcome.show .wbar i{animation:drain 5s linear forwards}
+@keyframes drain{to{transform:scaleX(0)}}
+
+/* المحتوى */
+main{width:min(92%,950px);margin:auto;padding-bottom:35px}
+.hero{text-align:center;padding:42px 10px 20px}
+.logo{width:85px;height:85px;margin:0 auto 15px;display:grid;place-items:center;border:1px solid #00ffa077;border-radius:26px;background:rgba(255,255,255,.05);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);color:var(--g);font-size:39px;font-weight:900;box-shadow:0 0 30px #00ffa022,inset 0 0 20px #ffffff12}
+h1{color:#d1ffe5;font-size:clamp(25px,6vw,43px);font-weight:900;text-shadow:0 0 25px #00ffa044}
+.dev{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:6px 18px;border:1px solid #d9c27a55;border-radius:30px;background:rgba(255,255,255,.05);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--gold);font-size:13px;font-weight:600}
+.desc{max-width:500px;margin:14px auto 0;color:#c2dfce;font-size:12px;line-height:2}
+.stitle{display:flex;align-items:center;justify-content:center;gap:13px;margin:26px 0;color:#baffdc;font-size:17px;font-weight:900}
+.stitle:before,.stitle:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,#00ffa088,transparent)}
+
+/* بطاقات زجاجية شفافة */
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.card{--c:#00ffa0;position:relative;display:block;min-width:0;padding:26px 14px 16px;text-align:center;text-decoration:none;color:#fff;overflow:hidden;
+ border:1px solid rgba(255,255,255,.26);border-radius:26px;
+ background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.02) 55%,rgba(255,255,255,.05));
+ backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
+ box-shadow:0 18px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(255,255,255,.06);
+ opacity:0;transform:translateY(40px) scale(.94);filter:blur(8px);
+ transition:opacity .9s,transform .9s cubic-bezier(.2,.8,.2,1),filter .9s,border-color .35s,box-shadow .35s}
+.card.show{opacity:1;transform:none;filter:none}
+.card.show:hover{transform:translateY(-6px);border-color:var(--c);box-shadow:0 22px 46px rgba(0,0,0,.3),0 0 30px -8px var(--c),inset 0 1px 0 rgba(255,255,255,.4)}
+.card:after{content:"";position:absolute;width:160px;height:160px;top:-95px;right:-60px;border-radius:50%;background:var(--c);filter:blur(70px);opacity:.22;pointer-events:none}
+.card:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+.app{position:relative;width:76px;height:76px;margin:0 auto 14px;display:grid;place-items:center;border-radius:22px;box-shadow:0 10px 24px -6px var(--c),inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 12px rgba(0,0,0,.18);transition:transform .4s}
+.app:before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(160deg,rgba(255,255,255,.34),transparent 45%)}
+.app svg{position:relative;width:42px;height:42px}
+.card:hover .app{transform:translateY(-4px) scale(1.07) rotate(-3deg)}
+.wa{--c:#25D366}.wa .app{background:linear-gradient(150deg,#5cf08f,#0f9b4a)}
+.fb{--c:#1877F2}.fb .app{background:linear-gradient(150deg,#4f9bff,#0a52c9)}
+.tt{--c:#fe2c55}.tt .app{background:#0a0a0a}
+.ig{--c:#e1306c}.ig .app{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.card h3{font-size:19px;font-weight:900}
+.card p{margin:5px 0 16px;color:#b8d9c7;font-size:11px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:11px 6px;border:1px solid var(--c);border-radius:14px;background:rgba(255,255,255,.06);font-size:12px;font-weight:700;transition:.3s}
+.card:hover .btn{background:var(--c);box-shadow:0 6px 22px -4px var(--c)}
+.card:active .btn{transform:scale(.96)}
+
+footer{margin-top:35px;padding:20px 10px;text-align:center;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:rgba(255,255,255,.03);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);color:#b8d9c7;font-size:11px;line-height:2.4}
+footer strong{color:var(--g)}footer .d{color:var(--gold)}
+
+@media(max-width:600px){
+ .hero{padding-top:34px}.cards{gap:11px}
+ .card{padding:21px 9px 14px;border-radius:20px}
+ .app{width:62px;height:62px;border-radius:19px}.app svg{width:34px;height:34px}
+ .card h3{font-size:16px}.card p{font-size:10px}.btn{font-size:11px;padding:10px 4px}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.card{opacity:1;transform:none;filter:none}}
+</style>
+<noscript><style>#loader{display:none}.card{opacity:1;transform:none;filter:none}</style></noscript>
+</head>
+<body>
+
+<div class="background"><div class="glow one"></div><div class="glow two"></div></div>
+<div id="map"></div>
+<div class="shade"></div>
+<div class="grid"></div>
+<div class="radar"></div>
+
+<!-- شاشة التحميل -->
+<div id="loader">
+ <div class="lc">
+  <div class="llogo">م</div>
+  <div class="lt">فوج مالك الأشتر</div>
+  <div class="ld">مطور الموقع : أبو أسد</div>
+  <div class="lline"><div id="progress"></div></div>
+  <div class="ln"><span id="number">0</span>%</div>
+ </div>
+</div>
+
+<!-- رسالة الترحيب -->
+<div id="welcome">
+ <div class="wbox">
+  <div class="wicon">✓</div>
+  <h2>أهلاً بكم في فوج مالك الأشتر</h2>
+  <p>يسعدنا انضمامكم إلينا، ونتمنى لكم وقتاً طيباً بين منصاتنا الرسمية.</p>
+  <div class="wdev">مطور الموقع : أبو أسد</div>
+  <div class="wbar"><i></i></div>
+ </div>
+</div>
+
+<main>
+ <header class="hero">
+  <div class="logo">م</div>
+  <h1>『 فَــوْجُ مَــالِــك الأَشْــتَــر 』</h1>
+  <div class="dev">♛ مطور الموقع : أبو أسد</div>
+  <p class="desc">أهلاً وسهلاً بكم في منصات فوج مالك الأشتر الرسمية</p>
+ </header>
+
+ <div class="stitle">حسابات التواصل الرسمية</div>
+
+ <section class="cards">
+
+  <!-- واتساب -->
+  <a class="card wa" href="https://wa.me/9647713370473" target="_blank" rel="noopener noreferrer">
+   <div class="app">
+    <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+   </div>
+   <h3>واتساب</h3>
+   <p>تواصلوا معنا مباشرة</p>
+   <span class="btn">↗ بدء المحادثة</span>
+  </a>
+
+  <!-- فيسبوك -->
+  <a class="card fb" href="https://www.facebook.com/share/1HU8rHZYoq/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">
+   <div class="app">
+    <svg viewBox="0 0 24 24" fill="#fff"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg>
+   </div>
+   <h3>فيسبوك</h3>
+   <p>تابعوا صفحتنا الرسمية</p>
+   <span class="btn">↗ زيارة الصفحة</span>
+  </a>
+
+  <!-- تيك توك -->
+  <a class="card tt" href="https://www.tiktok.com/@313_d13" target="_blank" rel="noopener noreferrer">
+   <div class="app">
+    <svg viewBox="0 0 24 24">
+     <defs><path id="tkp" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></defs>
+     <use href="#tkp" fill="#25F4EE" transform="translate(-.8 -.8)"/>
+     <use href="#tkp" fill="#FE2C55" transform="translate(.8 .8)"/>
+     <use href="#tkp" fill="#fff"/>
+    </svg>
+   </div>
+   <h3>تيك توك</h3>
+   <p>شاهدوا أحدث مقاطعنا</p>
+   <span class="btn">↗ زيارة الحساب</span>
+  </a>
+
+  <!-- إنستغرام -->
+  <a class="card ig" href="https://www.instagram.com/alofaa20/" target="_blank" rel="noopener noreferrer">
+   <div class="app">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9">
+     <rect x="4.2" y="4.2" width="15.6" height="15.6" rx="4.6"/>
+     <circle cx="12" cy="12" r="3.6"/>
+     <circle cx="16.9" cy="7.1" r="1.15" fill="#fff" stroke="none"/>
+    </svg>
+   </div>
+   <h3>إنستغرام</h3>
+   <p>تابعوا صورنا ومنشوراتنا</p>
+   <span class="btn">↗ زيارة الحساب</span>
+  </a>
+
+ </section>
+
+ <footer>
+  جميع الحقوق محفوظة © <strong>فوج مالك الأشتر</strong> <span id="year"></span><br>
+  <span class="d">بإدارة وتطوير : أبو أسد</span>
+ </footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* الخريطة: اختيارية، وإذا تعذّر تحميلها يستمر الموقع بالعمل */
+function initMap(){
+ if(typeof L==='undefined')return;
+ try{
+  const map=L.map('map',{zoomControl:false,scrollWheelZoom:false,dragging:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false}).setView([33.2,43.8],5.5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+  fetch('https://www.geoboundaries.org/api/current/gbOpen/IRQ/ADM1/')
+   .then(r=>r.ok?r.json():Promise.reject())
+   .then(m=>fetch(m.gjDownloadURL))
+   .then(r=>r.ok?r.json():Promise.reject())
+   .then(g=>{
+    const layer=L.geoJSON(g,{
+     style:{color:'#55ffc0',weight:1.5,opacity:.85,fillColor:'#00e89b',fillOpacity:.045},
+     onEachFeature:(f,l)=>L.marker(l.getBounds().getCenter(),{interactive:false,icon:L.divIcon({className:'',html:'<div class="pp"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map)
+    }).addTo(map);
+    map.fitBounds(layer.getBounds(),{padding:[20,20]});
+   }).catch(()=>{});
+ }catch(e){}
+}
+initMap();
+
+document.getElementById('year').textContent=new Date().getFullYear();
+
+/* التحميل ← الترحيب (5 ثوانٍ) ← ظهور البطاقات */
+const $=id=>document.getElementById(id);
+const loader=$('loader'),bar=$('progress'),num=$('number'),welcome=$('welcome');
+const cards=[...document.querySelectorAll('.card')];
+let revealed=false;
+
+function reveal(){
+ if(revealed)return;revealed=true;
+ cards.forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*280));
+}
+function closeWelcome(){welcome.classList.remove('show');reveal()}
+
+let v=0;
+const timer=setInterval(()=>{
+ v++;bar.style.width=v+'%';num.textContent=v;
+ if(v>=100){
+  clearInterval(timer);
+  setTimeout(()=>{
+   loader.classList.add('hide');
+   welcome.classList.add('show');
+   setTimeout(closeWelcome,5000);
+  },450);
+ }
+},25);
+
+welcome.addEventListener('click',closeWelcome);
+setTimeout(reveal,9000); /* احتياط */
+</script>
+</body>
+</html>
